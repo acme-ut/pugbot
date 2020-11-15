@@ -1,0 +1,18 @@
+{
+  "name": "pugbot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "discord.js": "^12.4.1",
+    "sqlite": "^4.0.17",
+    "sqlite-async": "^1.1.0",
+    "sqlite3": "^5.0.0"
+  }
+}
