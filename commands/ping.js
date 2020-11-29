@@ -1,10 +1,10 @@
 module.exports = {
     name: 'ping',
     args: false,
-    usage: 'ping',
+    usage: '',
     description: 'Provides pong',
-    guildOnly: true,
+    guildOnly: false,
     execute(message, args) {
-        message.channel.send('pong');
+        message.channel.send('dong');
     }
 };

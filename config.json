@@ -1,3 +1,6 @@
 {
-    "prefix": "."
+    "pug_database": "./pugbot.db",
+    "prefix": ".",
+    "vbucks_default": "100",
+    "pick_order": [0,1,1,0,0,1,1,0]
 }

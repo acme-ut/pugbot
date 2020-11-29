@@ -1,45 +1,18 @@
 // Includes
 const { prefix } = require("./config.json");
 const { token } = require("./bot_token.json");
-const sqlutil = require("./sqlutil.js");
-const fs = require('fs');
+const fs = require("fs");
 const Discord = require("discord.js");
 const client = new Discord.Client();
-const sqlite = require("sqlite-async");
 
 client.commands = new Discord.Collection();
 const commandFiles = fs.readdirSync("./commands").filter(file => file.endsWith('.js'));
 
+module.exports = { client };
+
 // Variable Definition
 var regexp = /[^\s"]+|"([^"]*)"/gi;
 var activity = `${prefix}help`
-
-/*
-// Attempt to connect to the SQLite database
-let db = new sqlite.Database("./pugbot.db", sqlite.OPEN_READWRITE, (err) => {
-  if (err) {
-    console.error(err.message);
-  }
-  console.log('Connected to the pugbot database.');
-});
-*/
-
-let db = async () => { await sqlite.open('./pugbot.db', sqlite.OPEN_READWRITE).then(console.log("Connected to the database!"))};
-
-
-//console.log(sqlutil.returnFound(db, "players", "95549859188187136"));
-//db.all(`SELECT * FROM players`, []).then(console.log(row));
-
-/*
-async function openDB() 
-
-constructor(dbName = ':memory:') {
-  return (async() => {
-      this.db = await sqLite.open(dbName)
-      return this
-  })()
-}
-*/
 
 for (const file of commandFiles) {
   const command = require(`./commands/${file}`);
@@ -61,19 +34,18 @@ client.on('message', message => {
   var args = [];
   do {
     var match = regexp.exec(message.content.slice(prefix.length).trim());
-    if (match != null)
-    {
+    if (match != null) {
       args.push(match[1] ? match[1] : match[0]);
     }
   } while (match != null);
 
   const commandName = args.shift().toLowerCase();
-  
+
   const command = client.commands.get(commandName)
     || client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
   if (!command) return;
 
-  if(command.guildOnly && message.channel.type === 'dm'){
+  if (command.guildOnly && message.channel.type === 'dm') {
     return message.reply("I can't execute this command inside DMs.")
   }
 
@@ -92,15 +64,3 @@ client.on('message', message => {
     message.reply('Error! Command not executed');
   }
 });
-
-//console.log(utility.returnFound(db, "players", "95549859188187136"));
-
-/*
-// Attempt to Close Database Connection
-db.close((err) => {
-  if (err) {
-    return console.error(err.message);
-  }
-  console.log('Closed the connection to the pugbot database.');
-});
-*/
