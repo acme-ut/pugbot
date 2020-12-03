@@ -1,6 +1,7 @@
 // Includes
 const { prefix } = require("./config.json");
 const { token } = require("./bot_token.json");
+const { populateChannels } = require("./pug.js");
 const fs = require("fs");
 const Discord = require("discord.js");
 const client = new Discord.Client();
@@ -20,11 +21,16 @@ for (const file of commandFiles) {
 }
 
 // Connect to the discord Client
-client.once("ready", () => {
-  console.log("Discord API Ready!");
+client.once('ready', () => {
+  console.log("Discord API Ready");
   client.user.setActivity(activity);
+  populateChannels();
 });
 client.login(token)
+
+client.on('presenceUpdate', (oldPresence, newPresence) => {
+  console.log(oldPresence + " to " + newPresence);
+});
 
 // Message Handler - Check to see if the message has prefix, then split the message into command / args, then perform checks before executing
 client.on('message', message => {

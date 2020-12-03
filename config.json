@@ -1,6 +1,10 @@
 {
     "pug_database": "./pugbot.db",
     "prefix": ".",
-    "vbucks_default": "100",
-    "pick_order": [0,1,1,0,0,1,1,0]
+    "currency_starting": "100",
+    "currency_prefix": ":dollar: $",
+    "tag_length": 10,
+    "tag_nomic": "<:nomic:784095781569298502>",
+    "tag_nocapt": "<:nocapt:784111124064632884>",
+    "pick_order": [0,1,1,0]
 }

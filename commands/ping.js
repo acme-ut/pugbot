@@ -5,6 +5,6 @@ module.exports = {
     description: 'Provides pong',
     guildOnly: false,
     execute(message, args) {
-        message.channel.send('dong');
+        message.channel.send("\uD83D\uDC4C");
     }
 };

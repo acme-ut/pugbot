@@ -12,11 +12,21 @@ module.exports = {
         var memberobject = message.author;
         var channelid = message.channel.id;
 
+        var res = [];
+        
         args.forEach(element => {
-            console.log(element);
             if (leaveMatch(channelid, memberobject, element)){
-                message.channel.send(`${memberobject.username} quit ${element}`);
+                res.push(`${element}`);
             }
         });
-    }
+
+        if (res.length > 0) {
+            if (res.length > 1) {
+                last = res.pop();
+                message.channel.send(`${message.author.username} left \`${res.join("\`, \`")}\` and \`${last}\``);
+            } else {
+                message.channel.send(`${message.author.username} left \`${res}\``);
+            }
+        }
+    },
 };
