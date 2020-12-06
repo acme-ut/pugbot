@@ -13,29 +13,29 @@ module.exports = {
         var memberobject = message.author;
         var channelid = message.channel.id;
 
-        var res = [];
+        var response = [];
 
         if (args.length > 1) {
             var mode = args.shift();
             if (typeof mode === "string") {
                 var iter = message.mentions.users.values();
                 for (const user of iter) {
-                    var matchobj = joinMatch(channelid, user, mode);
+                    var modeobj = joinMatch(channelid, user, mode);
                     addMemberIfNotExists(user.id);
-                    if (matchobj) {
-                        if (matchobj.maxplayers == matchobj.players.length) {
-                            res = `\`${mode}\` filled!`;
+                    if (modeobj) {
+                        if (modeobj.maxplayers == modeobj.players.length) {
+                            response = `\`${mode}\` filled!`;
                             break;
                         } else {
-                            res = listMatch(channelid, mode);
+                            response = listMatch(modeobj);
                         }
                     }
                 }
             }
         }
         
-        if (res.length > 0) {
-            message.channel.send(res);
+        if (response.length > 0) {
+            message.channel.send(response);
         }
     },
 };

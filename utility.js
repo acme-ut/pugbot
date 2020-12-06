@@ -82,18 +82,18 @@ function addMapIfNotExists(channelid, mode, mapname) {
         return false;
     } else {
         addMap(channelid, mode, mapname);
-        return true
+        return true;
     }
 }
 
 function listAllMaps(channelid){
-    const stmt = db.prepare(`SELECT * FROM maps WHERE channelid = ?`);
+    const stmt = db.prepare(`SELECT * FROM maps WHERE channelid = ? ORDER BY mapname`);
     const info = stmt.all(channelid);
     return info;
 }
 
 function deleteMap(channelid, mapmode, mapname){
-    const stmt = db.prepare(`DELETE FROM maps WHERE channelid = ? AND mapmode = ? AND mapname = ?`)
-    const info = stmt.run(channelid, mapmode, mapname)
+    const stmt = db.prepare(`DELETE FROM maps WHERE channelid = ? AND mapmode = ? AND mapname = ?`);
+    const info = stmt.run(channelid, mapmode, mapname);
     return info;
 }

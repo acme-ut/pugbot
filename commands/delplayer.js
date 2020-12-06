@@ -1,4 +1,4 @@
-const { leaveMatch, listMatch } = require("../pug.js");
+const { leaveMatch, listMatch, fetchMatch } = require("../pug.js");
 
 module.exports = {
     name: 'delplayer',
@@ -12,23 +12,21 @@ module.exports = {
         var memberobject = message.author;
         var channelid = message.channel.id;
 
-        var res = [];
+        var response = [];
 
         if (args.length > 1) {
             var mode = args.shift();
             if (typeof mode === "string") {
                 var iter = message.mentions.users.values();
-                for (const memberobject of iter) {
-                    var removed = leaveMatch(channelid, memberobject, mode);
-                    if (removed) {
-                        // Need a check here to see if the game is no longer full
-                        res = listMatch(channelid, mode);
-                    }
+                for (const userobj of iter) {
+                    var modeobj = fetchMatch(channelid, mode);
+                    leaveMatch(modeobj, userobj);
+                    response = listMatch(modeobj);
                 }
             }
         }
-        if (res.length > 0) {
-            message.channel.send(res);
+        if (response.length > 0) {
+            message.channel.send(response);
         }
     },
 };

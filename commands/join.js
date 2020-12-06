@@ -1,5 +1,6 @@
-const { joinMatch, listMatch } = require("../pug.js");
+const { joinMatch, listMatch, matchFilled, fetchUserState } = require("../pug.js");
 const { addMemberIfNotExists } = require("../utility.js");
+const { client } = require("../main.js");
 
 module.exports = {
     name: 'join',
@@ -12,24 +13,26 @@ module.exports = {
 
         var memberobject = message.author;
         var channelid = message.channel.id;
+        var response = [];
 
-        var res = [];
-
-        args.some(function(element) {
-            var matchobj = joinMatch(channelid, memberobject, element);
-            addMemberIfNotExists(memberobject.id);
-            if(matchobj) {
-                if(matchobj.maxplayers == matchobj.players.length){
-                    res = `\`${element}\` filled!`;
+        args.some(function (mode) {
+            var modeobj = joinMatch(channelid, memberobject, mode);
+            if (modeobj) {
+                if (modeobj.maxplayers === modeobj.players.length) {
+                    matchFilled(client, modeobj);
+                    response = [];
                     return true;
                 } else {
-                    res.push(listMatch(channelid, element));
+                    response.push(listMatch(modeobj));
                 }
-            };
+            }
         });
 
-        if (res.length > 0) {
-            message.channel.send(res);
+        if (response.length > 0) {
+            message.channel.send(response);
         }
+
+        addMemberIfNotExists(memberobject.id);
+
     },
 };

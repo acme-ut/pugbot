@@ -1,13 +1,14 @@
 const { pick_order, tag_nomic, tag_nocapt } = require("./config.json");
 const { db } = require("./utility.js");
 
+
 module.exports = {
     // Utility
-    populateChannels, everyGameContainingUser, fetchUserState,
+    populateChannels, fetchUserState, fetchChannel,
     // Join / Leave Matches
-    joinMatch, leaveMatch, leaveAll,
+    joinMatch, leaveMatch, leaveAll, matchFilled,
     // List Matches
-    listMatch, listMatches, listAll,
+    listMatch, fetchMatch,
     // Admin
     addMatch, deleteMatch
 }
@@ -20,34 +21,17 @@ function populateChannels() {
 
     if (typeof info !== "undefined") {
         info.forEach(element => {
-
-            var newgameobj =
-            {
-                "channelid": element.channelid,
-                "modeshort": element.modeshort,
-                "modelong": element.modelong,
-                "players": [],
-                "maxplayers": element.playercount,
-                "redplayers": [],
-                "blueplayers": [],
-                "pick_order": pick_order
-            };
-
-            if (element.channelid in channels) {
-                channels[element.channelid].push(newgameobj);
-            } else {
-                channels[element.channelid] = [newgameobj];
-            };
-
+            addMatch(element.channelid, element.modeshort, element.modelong, element.playercount);
         });
         console.log("Match database populated");
     };
 }
 
+async function addMatch(channelid, modeshort, modelong, playercount) {
 
-function addMatch(channelid, modeshort, modelong, playercount) {
     var newgameobj =
     {
+        "channelid": channelid,
         "modeshort": modeshort,
         "modelong": modelong,
         "players": [],
@@ -56,163 +40,148 @@ function addMatch(channelid, modeshort, modelong, playercount) {
         "blueplayers": [],
         "pick_order": pick_order
     };
+
     if (channelid in channels) {
-        channels[channelid].push(newgameobj);
+        channels[channelid] = Object.assign({ [modeshort.toLowerCase()]: newgameobj }, channels[channelid]);
     } else {
-        channels[channelid] = [newgameobj];
+        channels[channelid] = { [modeshort.toLowerCase()]: newgameobj };
     }
 }
 
 function deleteMatch(channelid, modeshort) {
     var modes = channels[channelid];
-    for (i = 0; i < modes.length; i++) {
-        if (modes[i].modeshort === modeshort) {
-            var index = modes.findIndex(mode => mode.modeshort == modeshort);
-            modes.splice(index, 1);
-            return true;
+
+    for (const mode in modes) {
+        if (modes.hasOwnProperty(mode)) {
+            if (modes[mode].modeshort === modeshort) {
+                delete modes[mode];
+            }
         }
     }
 }
 
-function inMatch(matchplayers, userid) {
-    var playerfound = matchplayers.find(player => player.id === userid);
-    if (typeof playerfound == "undefined") {
-        return false;
-    } else {
-        return true;
+function fetchChannel(channelid) {
+    if (channelid in channels) {
+        return channels[channelid];
     }
 }
 
-function joinMatch(channelid, userobject, mode) {
-    if (!(channelid in channels)) {
-        console.log("Channel not found");
-    } else {
-        var modes = channels[channelid];
-        for (i = 0; i < modes.length; i++) {
-            if (modes[i].modeshort === mode) {
-                if (inMatch(modes[i].players, userobject.id) || modes[i].maxplayers === modes[i].players.length) {
-                    return false;
-                } else {
-                    modes[i].players.push(userobject);
-                    return modes[i];
-                }
-            }
-        };
-    };
-}
-
-function leaveMatch(channelid, userobject, mode) {
+function fetchMatch(channelid, mode) {
     if (channelid in channels) {
         var modes = channels[channelid];
-        for (i = 0; i < modes.length; i++) {
-            if (modes[i].modeshort === mode) {
-                if (inMatch(modes[i].players, userobject.id)) {
-                    var index = modes[i].players.findIndex(player => player.id === userobject.id);
-                    modes[i].players.splice(index, 1);
-                    return true;
+        if (mode in modes) {
+            return modes[mode];
+        }
+    }
+    return false;
+}
+
+function joinMatch(channelid, userobj, mode) {
+    if (channelid in channels) {
+        var modes = channels[channelid];
+        if (mode in modes) {
+            var matchobj = modes[mode];
+            if (!(userobj in matchobj.players) && matchobj.maxplayers > matchobj.players.length && !(matchobj.players.includes(userobj))) {
+                matchobj.players.push(userobj);
+                return matchobj;
+            }
+        }
+    };
+    return false;
+}
+
+function matchFilled(client, matchobj) {
+
+    matchobj.players.forEach(memberobject => {
+        var modesleft = leaveAll(memberobject, [matchobj]);
+        Object.keys(modesleft).forEach(channelid => {
+            var modelist = [];
+            for (const mode in modesleft[channelid]) {
+                if (modesleft[channelid].hasOwnProperty(mode)) {
+                    const modeobj = modesleft[channelid][mode];
+                    modelist.push(modeobj.modeshort);
+                }
+            }
+            var last = modelist.pop();
+            if (modelist.length > 0) {
+                response = `${memberobject.username} left \`${modelist.join("\`, \`")}\` and \`${last}\` because \`${matchobj.modeshort}\` filled.`;
+            } else {
+                response = `${memberobject.username} left \`${last}\` because \`${matchobj.modeshort}\` filled.`;
+            }
+
+            if (response.length > 0) {
+                client.channels.cache.get(channelid).send(response);
+            }
+        });
+    });
+
+}
+
+function leaveMatch(modeobj, userobj) {
+    var index = modeobj.players.findIndex(player => player.id === userobj.id);
+    modeobj.players.splice(index, 1);
+    // Need a check here to see if the game is no longer full
+}
+
+function leaveAll(userobj, exceptions) {
+    if (typeof exceptions === "undefined") { exceptions = [false]; }
+    var modesleft = {};
+
+    for (const channel in channels) {
+        if (channels.hasOwnProperty(channel)) {
+            const channelobj = channels[channel];
+            for (const mode in channelobj) {
+                if (channelobj.hasOwnProperty(mode)) {
+                    const modeobj = channelobj[mode];
+                    if (modeobj.players.includes(userobj) && !(exceptions.includes(modeobj))) {
+                        leaveMatch(modeobj, userobj);
+                        if (modeobj.channelid in modesleft) {
+                            modesleft[modeobj.channelid] = Object.assign({ [modeobj.modeshort.toLowerCase()]: modeobj }, modesleft[modeobj.channelid]);
+                        } else {
+                            modesleft[modeobj.channelid] = { [modeobj.modeshort.toLowerCase()]: modeobj };
+                        }
+
+                    }
                 }
             }
         }
     }
+    return modesleft;
 }
 
-function leaveAll(userobject) {
-    channelobj = {};
-    foundlist = everyGameContainingUser(userobject);
-
-    foundlist.forEach(mode => {
-
-        if (mode.channelid in channelobj) {
-            channelobj[mode.channelid].push(mode.modeshort);
-        } else {
-            channelobj[mode.channelid] = [mode.modeshort];
-        };
-
-        var index = mode.players.findIndex(player => player.id === userobject.id);
-        mode.players.splice(index, 1);
+function listMatch(matchobj) {
+    var usernamelist = [];
+    matchobj.players.forEach(player => {
+        usernamelist.push(fetchUserState(player));
     });
-
-    return channelobj;
+    return `**${matchobj.modelong}: [${matchobj.players.length}/${matchobj.maxplayers}]**\n${usernamelist.join(" :small_orange_diamond: ")}`;
 }
 
-function listMatch(channelid, mode) {
-    var matchfound = channels[channelid].find(match => match.modeshort == mode)
-    if (matchfound) {
-        var gamelist = [];
-        matchfound.players.forEach(element => {
-            gamelist.push(fetchUserState(element));
-        });
-        return `**${matchfound.modelong} [${matchfound.players.length}/${matchfound.maxplayers}]:**\n ${gamelist.join(" :small_orange_diamond: ")}`;
-    } else {
-        console.log("Mode not found!")
-    }
-}
-
-function fetchUserState(userobject) {
-    var state = [userobject.username];
-    if (typeof userobject.badge !== "undefined" && userobject.badge.length > 0 ||
-        typeof userobject.nomic !== "undefined" && userobject.nomic ||
-        typeof userobject.nocapt !== "undefined" && userobject.nocapt) {
+function fetchUserState(userobj) {
+    var state = [userobj.username];
+    if (typeof userobj.badge !== "undefined" && userobj.badge.length > 0 ||
+        typeof userobj.nomic !== "undefined" && userobj.nomic ||
+        typeof userobj.nocapt !== "undefined" && userobj.nocapt) {
 
         state.push(" [");
 
-        if (typeof userobject.badge !== "undefined" && userobject.badge.length > 0) {
-            state.push(`${userobject.badge}`);
+        if (typeof userobj.badge !== "undefined" && userobj.badge.length > 0) {
+            state.push(`${userobj.badge}`);
         }
 
-        if (typeof userobject.nomic !== "undefined" && userobject.nomic) {
-            if (userobject.nomic) {
+        if (typeof userobj.nomic !== "undefined" && userobj.nomic) {
+            if (userobj.nomic) {
                 state.push(`${tag_nomic}`);
             }
         }
 
-        if (typeof userobject.nocapt !== "undefined" && userobject.nocapt) {
-            if (userobject.nocapt) {
+        if (typeof userobj.nocapt !== "undefined" && userobj.nocapt) {
+            if (userobj.nocapt) {
                 state.push(`${tag_nocapt}`);
             }
         }
-        
+
         state.push("] ")
     }
     return state.join("");
-}
-
-function listMatches(channelid) {
-    if (!(channelid in channels)) {
-        console.log("No modes found!");
-    } else {
-        var modes = channels[channelid];
-        var gamelist = [];
-        modes.forEach(element => {
-            gamelist.push(`${element.modeshort} [${element.players.length}/${element.maxplayers}]`);
-        });
-        return gamelist.join(" :small_blue_diamond: ");
-    }
-}
-
-function listAll(channelid) {
-    if (!(channelid in channels)) {
-        console.log("No modes found!");
-    } else {
-        var modes = channels[channelid];
-        var gamelist = [];
-        modes.forEach(element => {
-            if (element.players.length > 0) {
-                gamelist.push(element);
-            }
-        });
-        return gamelist;
-    }
-}
-
-function everyGameContainingUser(userobject) {
-    gamearray = [];
-    for (channel in channels) {
-        for (gamemode in channels[channel]) {
-            if (channels[channel][gamemode].players.filter(obj => obj.id === userobject.id).length > 0) {
-                gamearray.push(channels[channel][gamemode]);
-            }
-        }
-    }
-    return gamearray;
 }

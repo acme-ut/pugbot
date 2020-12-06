@@ -10,19 +10,26 @@ module.exports = {
     execute(message, args) {
 
         var memberobject = message.author;
-        var channelobj = leaveAll(memberobject);
-        var channellist = Object.keys(channelobj);
+        var modesleft = leaveAll(memberobject, []);
 
-        channellist.forEach(channelid => {
-            var modelist = channelobj[channelid];
+        Object.keys(modesleft).forEach(channelid => {
+            var modelist = [];
+            for (const mode in modesleft[channelid]) {
+                if (modesleft[channelid].hasOwnProperty(mode)) {
+                    const modeobj = modesleft[channelid][mode];
+                    modelist.push(modeobj.modeshort);
+                }
+            }
             var last = modelist.pop();
-            if (modelist.length > 0){
-                var message = `${memberobject.username} left \`${modelist.join("\`, \`")}\` and \`${last}\``;
+            if (modelist.length > 0) {
+                response = `${memberobject.username} left \`${modelist.join("\`, \`")}\` and \`${last}\``;
             } else {
-                var message = `${memberobject.username} left \`${last}\``;
+                response = `${memberobject.username} left \`${last}\``;
             }
 
-            client.channels.cache.get(channelid).send(message);
+            if (response.length > 0) {
+                client.channels.cache.get(channelid).send(response);
+            }
         });
     },
 };

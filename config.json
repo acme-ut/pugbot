@@ -6,5 +6,6 @@
     "tag_length": 10,
     "tag_nomic": "<:nomic:784095781569298502>",
     "tag_nocapt": "<:nocapt:784111124064632884>",
-    "pick_order": [0,1,1,0]
+    "pick_order": [0,1,1,0],
+    "time_to_captain": 10
 }

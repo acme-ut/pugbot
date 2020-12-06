@@ -28,10 +28,6 @@ client.once('ready', () => {
 });
 client.login(token)
 
-client.on('presenceUpdate', (oldPresence, newPresence) => {
-  console.log(oldPresence + " to " + newPresence);
-});
-
 // Message Handler - Check to see if the message has prefix, then split the message into command / args, then perform checks before executing
 client.on('message', message => {
   if (!message.content.startsWith(prefix) || message.author.bot) return;

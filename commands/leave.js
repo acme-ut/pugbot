@@ -1,4 +1,4 @@
-const { leaveMatch, listMatch } = require("../pug.js");
+const { leaveMatch, fetchMatch } = require("../pug.js");
 
 module.exports = {
     name: 'leave',
@@ -12,21 +12,28 @@ module.exports = {
         var memberobject = message.author;
         var channelid = message.channel.id;
 
-        var res = [];
-        
-        args.forEach(element => {
-            if (leaveMatch(channelid, memberobject, element)){
-                res.push(`${element}`);
+        var response = [];
+        var modesleft = [];
+
+        args.forEach(mode => {
+            modeobj = fetchMatch(channelid, mode);
+            if (typeof modeobj !== "undefined") {
+                if (modeobj.players.includes(memberobject)) {
+                    leaveMatch(modeobj, memberobject);
+                    modesleft.push(modeobj.modeshort);
+                }
             }
         });
 
-        if (res.length > 0) {
-            if (res.length > 1) {
-                last = res.pop();
-                message.channel.send(`${message.author.username} left \`${res.join("\`, \`")}\` and \`${last}\``);
-            } else {
-                message.channel.send(`${message.author.username} left \`${res}\``);
-            }
+        var last = modesleft.pop();
+        if (modesleft.length > 0) {
+            response = `${memberobject.username} left \`${modesleft.join("\`, \`")}\` and \`${last}\``;
+        } else {
+            response = `${memberobject.username} left \`${last}\``;
+        }
+
+        if (response.length > 0) {
+            message.channel.send(response);
         }
     },
 };

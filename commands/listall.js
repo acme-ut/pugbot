@@ -1,37 +1,38 @@
-const { listAll, listMatches, fetchUserState } = require("../pug.js");
+const { fetchChannel, listMatch } = require("../pug.js");
 
 module.exports = {
     name: 'listall',
     aliases: ['lsa'],
-    description: 'Lists all modes in current channel',
+    description: 'Lists all active modes in current channel',
     args: false,
     guildOnly: true,
     execute(message, args) {
 
         var channelid = message.channel.id;
+        var modes = fetchChannel(channelid);
+        var active = false;
+        var response = [];
 
-        var res = listAll(channelid);
-
-        if (typeof res === "undefined") {
-            message.channel.send("No modes found.");
-            return false;
+        
+        for (mode in modes) {
+            var modeobj = modes[mode];
+            if (modeobj.players.length > 0) {
+                response.push(listMatch(modeobj));
+                active = true;
+            }
         }
 
-        if (res.length > 0) {
-            var matches = [];
-            res.forEach(element => {
-                var gamelist = [];
-                element.players.forEach(element => {
-                    gamelist.push(fetchUserState(element));
-                });
-                matches.push(`**${element.modelong} [${element.players.length}/${element.maxplayers}]:**\n ${gamelist.join(" :small_orange_diamond: ")}`);
-            });
-            message.channel.send(matches);
-        } else {
-            var modes = listMatches(channelid);
-            if (modes) {
-                message.channel.send(modes);
+        if (!active){
+            for (mode in modes) {
+                var modeobj = modes[mode];
+                response.push(`${modeobj.modeshort} [${modeobj.players.length}/${modeobj.maxplayers}]`);
             }
+            response = response.sort();
+            response = response.join(` :small_blue_diamond: `);
+        }
+
+        if (response.length > 0) {
+            message.channel.send(response);
         }
     },
 };

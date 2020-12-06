@@ -1,4 +1,4 @@
-const { listMatches, listMatch } = require("../pug.js");
+const { fetchChannel, fetchMatch, listMatch } = require("../pug.js");
 
 module.exports = {
     name: 'list',
@@ -10,17 +10,30 @@ module.exports = {
     execute(message, args) {
 
         var channelid = message.channel.id;
+        var response = [];
 
         if (args.length == 0) {
-            var modes = listMatches(channelid);
-            if (modes) {
-                message.channel.send(modes);
+            var modes = fetchChannel(channelid);
+            for (mode in modes) {
+                var modeobj = modes[mode];
+                response.push(`${modeobj.modeshort} [${modeobj.players.length}/${modeobj.maxplayers}]`);
             }
-        }
-        else {
-            args.forEach(element => {
-                message.channel.send(listMatch(channelid, element));
+            response = response.sort();
+            response = response.join(` :small_blue_diamond: `);
+        } else {
+            var unique = [];
+            args.forEach(mode => {
+                if (!unique.includes(mode)){
+                    var modeobj = fetchMatch(channelid, mode);
+                    response.push(listMatch(modeobj, modeobj.players));
+                    unique.push(mode);
+                }
             });
         }
+
+        if (response.length > 0) {
+            message.channel.send(response);
+        }
+
     },
 };
